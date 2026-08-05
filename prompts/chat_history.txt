@@ -1,0 +1,4 @@
+Human: Hi, I ordered a laptop last week.
+AI: I can help with that. Could you share your order ID?
+Human: It's ORD12345.
+AI: Thanks! I see your order was shipped 2 days ago.
