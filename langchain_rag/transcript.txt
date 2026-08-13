@@ -1,0 +1,1111 @@
+Welcome everyone, and thanks for joining this deep dive on artificial intelligence, its history, its present, and where it might be heading. We have a lot of ground to cover today, so let us get started right away. This is a long session, spanning many hours, so feel free to pause and come back at any point.
+
+[pause for questions]
+
+Artificial intelligence, at its core, is the effort to build machines that can perform tasks that would normally require human intelligence. That includes recognizing images, understanding language, making decisions, and even generating creative work. The field goes back to the nineteen fifties, when researchers gathered at Dartmouth College for a summer workshop that is often considered the birthplace of the term artificial intelligence.
+
+[pause for questions]
+
+In those early days, researchers believed a machine as intelligent as a human was just a decade or two away. They built programs that could prove mathematical theorems, play checkers, and solve simple word problems. But the computers of the time were slow, memory was tiny, and the problems were far more complex than anyone appreciated. This led to what we now call the first AI winter, a period in the nineteen seventies when funding dried up.
+
+[audience laughter]
+
+Machine learning, a subset of AI, enables systems to learn from data without being explicitly programmed. Instead of writing rules by hand, you give the machine examples and let it find patterns on its own. In the nineteen eighties, backpropagation made it practical to train neural networks with multiple layers, loosely inspired by the human brain.
+
+[brief technical difficulty, resuming]
+
+Deep learning uses neural networks with many layers to model complex patterns. In an image recognition network, early layers detect edges, later layers detect shapes and parts, and final layers recognize whole objects. This hierarchy of learned features is what makes deep learning so powerful, and it generalizes far beyond images, into language, audio, and structured data.
+
+[brief technical difficulty, resuming]
+
+DeepMind is a British AI research lab founded in twenty ten and acquired by Google in twenty fourteen. It was founded by Demis Hassabis, Shane Legg, and Mustafa Suleyman. Demis Hassabis is the co founder and chief executive officer of DeepMind. He was a child chess prodigy, then a video game designer, then a neuroscientist, before turning to artificial intelligence, with the stated mission to solve intelligence and use it to solve everything else.
+
+[brief technical difficulty, resuming]
+
+DeepMind is known for breakthroughs like AlphaGo, which defeated the world champion at the board game Go. Go has more possible positions than atoms in the observable universe, and experts thought a machine beating a top human was a decade away. In twenty sixteen, AlphaGo defeated Lee Sedol in a five game match watched by millions. Move thirty seven in the second game was so unexpected that commentators initially thought it was a mistake.
+
+[pause for questions]
+
+After AlphaGo came AlphaZero, which taught itself Go, chess, and shogi from scratch with no human games, purely through self play. Then came AlphaFold, which predicts the three dimensional structure of proteins from their amino acid sequence, cracking a fifty year old open problem in biology. DeepMind released predicted structures for nearly every known protein, free, to the scientific community.
+
+Large language models are trained on vast amounts of text and can generate human like responses. These models are built on the transformer architecture, introduced in a twenty seventeen paper titled Attention Is All You Need. The key innovation is attention, letting the model weigh the importance of different words relative to each other, regardless of distance in the sentence.
+
+[pause for questions]
+
+Before transformers, models processed text sequentially, which made long range relationships hard to capture. Attention lets every word look at every other word at once, and this scales remarkably well. The more data and compute researchers used, the better these models got, with no obvious ceiling for a long time.
+
+This scaling led to models with billions, then hundreds of billions of parameters, the internal numbers a model adjusts during training. A model learns by predicting the next word repeatedly across enormous text corpora, adjusting parameters each time it is wrong. Trained on much of the public internet plus books and code, these models develop broad abilities to write, summarize, translate, and answer questions.
+
+[slide transition]
+
+But there is a fundamental limitation. A language model only knows what was in its training data, which has a cutoff date, and it cannot know anything private or specific to your own documents. Crucially, when a model does not know something, it often does not say so, instead generating a plausible but false answer. This is called hallucination, one of the biggest problems in deploying these systems.
+
+[pause for questions]
+
+Retrieval augmented generation, or RAG, combines language models with a search step to solve exactly this problem. Instead of relying only on memorized knowledge, the system first retrieves relevant documents from an external source, then feeds those documents to the model along with the question, so the answer stays grounded in real, verifiable information.
+
+[pause for questions]
+
+A RAG pipeline has two phases. Indexing happens ahead of time: documents are loaded, split into chunks, embedded into vectors, and stored in a vector database. Retrieval and generation happen at question time: the question is embedded, the nearest chunks are retrieved, combined with the question into a prompt, and sent to the model to generate a grounded answer.
+
+[pause for questions]
+
+Document loading is the first indexing step, reading raw text out of sources like PDFs, web pages, transcripts, or wikis. Splitting comes next, because a document is often too long to embed or retrieve precisely as one piece, so it is broken into chunks of a few hundred to a thousand characters, usually with some overlap so sentences are not awkwardly cut at chunk boundaries.
+
+[brief technical difficulty, resuming]
+
+Embedding converts each chunk into a vector, a list of numbers capturing its meaning, so that texts with similar meaning end up close together in vector space, even if they use completely different words. This is what allows meaning based search rather than exact keyword matching.
+
+[brief technical difficulty, resuming]
+
+Storing places these vectors, alongside the original text, into a vector database such as FAISS, Chroma, or Pinecone. These databases are optimized for one operation: given a query vector, quickly find the most similar stored vectors, even across millions of chunks.
+
+At question time, the user's query is embedded the same way, and the vector store returns the closest matching chunks, typically the top three to five. These retrieved chunks are combined with the question into an augmented prompt, usually with an instruction telling the model to answer only from the provided context and to say when it does not know.
+
+Generation is the final step: the augmented prompt, containing both retrieved context and the question, goes to the language model, which produces an answer grounded in the retrieved material rather than its own memory, making the answer more accurate and able to reflect information the model never saw during training.
+
+[pause for questions]
+
+Maximal marginal relevance, or MMR, is a retrieval refinement. Plain similarity search can return several nearly identical chunks, wasting space and narrowing the model's view. MMR selects chunks that are both relevant and diverse from each other, improving coverage of the topic.
+
+The multi query retriever is another refinement. A single phrasing of a question searches from only one angle, and documents phrased differently might be missed. This approach uses a language model to rewrite the question several ways, searches with each version, and merges the unique results, catching more relevant material.
+
+[brief technical difficulty, resuming]
+
+Contextual compression is a third refinement. A retrieved chunk might contain one relevant sentence buried in an otherwise irrelevant paragraph. A compressor model extracts just the relevant portion of each chunk before it reaches the final model, keeping context clean and reducing cost.
+
+A natural question is why not simply make the context window bigger and include everything. Even with large context windows, processing huge context for every question is slow and expensive, models attend less well to information buried in the middle of very long input, and knowledge bases can be far larger than any context window could hold. Retrieval remains the practical solution.
+
+[slide transition]
+
+RAG does not eliminate hallucination entirely, it reduces it substantially. A model can still misread retrieved context, or retrieval can fetch the wrong chunks, so good chunking, good retrieval, and clear prompts all matter. RAG is also not limited to question answering, the same pattern underlies summarization, grounded drafting, customer support, and research assistants.
+
+[brief technical difficulty, resuming]
+
+Evaluating a RAG system means measuring two things separately: retrieval quality, whether the right chunks are fetched for a given question, and answer quality, whether the final answer is accurate, complete, and faithful to the retrieved source. Faithfulness matters especially, since an answer can sound convincing while contradicting its own retrieved context.
+
+[slide transition]
+
+In production, indexing often runs as a background job triggered whenever new documents arrive, keeping the vector store synchronized with the source of truth. Updates and deletions must be handled carefully, since stale entries in the vector store lead directly to wrong answers later.
+
+Cost and latency are constant engineering concerns. Every embedding call and every generation call costs time and money. Caching common questions, batching embedding requests, and matching model size to each step's difficulty are standard optimizations; not every step needs the largest available model.
+
+[audience laughter]
+
+To be clear about scope, this session does not cover nuclear fusion. That is a topic in energy and physics, interesting in its own right, but entirely outside what we are discussing today, which is artificial intelligence, DeepMind, and retrieval augmented generation. This is mentioned only because the question comes up occasionally.
+
+[pause for questions]
+
+Retrieval augmented models turn a general purpose language model into a specialist on your own information. A hospital can ground an assistant in its medical protocols, a law firm in its case files, a software company in its documentation. The underlying model stays the same; the retrieved knowledge is what makes it useful for that specific domain.
+
+[brief technical difficulty, resuming]
+
+For decades, answering questions about your own data meant building rigid systems with hand written rules and structured databases. Now, pointing a retrieval augmented model at a pile of unstructured documents can produce a system answering natural language questions, with citations, in a matter of hours rather than months.
+
+[slide transition]
+
+Retrieval is not perfect. Embeddings capture meaning imperfectly, and the chunk that looks most similar by vector distance is not always the most useful one. Active research areas include hybrid search that combines keyword and vector search, re ranking steps using a second model to reorder retrieved candidates, and methods letting the model decide for itself when and what to retrieve.
+
+[audience laughter]
+
+Trust and verification matter alongside retrieval. Good RAG systems provide citations linking each part of an answer back to its source chunk, letting a human verify the claim, which is essential in high stakes domains like medicine, law, and finance.
+
+[audience laughter]
+
+The broader field of AI faces real societal questions too: bias in training data, the environmental cost of training enormous models, effects on employment, misinformation, and how to keep increasingly capable systems aligned with human values. DeepMind, like other major labs, maintains teams focused specifically on AI safety and ethics.
+
+[brief technical difficulty, resuming]
+
+For a first retrieval augmented system, start simple: a handful of documents, reasonable chunking, straightforward embedding, a simple vector store, and a basic retrieve then generate pipeline, working end to end before adding refinements. Measure where the simple version falls short, then add MMR, multi query, or compression only where they demonstrably help.
+
+[brief technical difficulty, resuming]
+
+The quality of a retrieval augmented system is bounded by the quality of the documents feeding it. Cleaning documents, removing duplicates, fixing formatting, and chunking thoughtfully often improves results more than switching to a fancier model.
+
+[audience laughter]
+
+The prompt wrapping retrieved context matters more than people expect. A good prompt clearly instructs the model to rely on the provided context, to say when it does not know, and to avoid inventing information. Small changes in phrasing can noticeably change how faithful and honest the resulting answers are.
+
+[pause for questions]
+
+To summarize so far: artificial intelligence evolved from hand written rules to systems that learn from data. Deep learning and the transformer architecture unlocked powerful language models. Those models are powerful but limited by training data and prone to hallucination. Retrieval augmented generation grounds the model in retrieved documents, following the pipeline of load, split, embed, store, retrieve, augment, and generate.
+
+[pause for questions]
+
+Let's go deeper on tokenization, since it underlies everything a language model does. Text is broken into tokens, which might be whole words, parts of words, or punctuation. A tokenizer trained on a large corpus builds a vocabulary of common subword pieces, so rare words can still be represented as a sequence of familiar fragments rather than an unknown symbol. Token count, not word count, is what determines cost and context window usage in practice.
+
+[slide transition]
+
+Positional information also matters in transformers. Because attention looks at all tokens at once rather than in strict order, the model needs some signal about where each token sits in the sequence. Positional encodings, whether fixed sinusoidal patterns or learned embeddings, are added to each token so the model can distinguish the first word of a sentence from the last.
+
+[pause for questions]
+
+Fine tuning is a technique for adapting a pretrained model to a narrower task by continuing training on a smaller, more specific dataset. This differs from retrieval augmented generation: fine tuning changes the model's internal weights permanently, while RAG leaves the model unchanged and instead supplies fresh information at query time through the prompt. The two approaches are complementary rather than competing.
+
+[audience laughter]
+
+Instruction tuning and reinforcement learning from human feedback are two techniques that shape how a base language model behaves as an assistant. A base model, trained purely to predict next tokens, is not naturally good at following instructions or refusing harmful requests. Additional training stages teach the model to be helpful, honest, and safe in conversation, which is why a raw pretrained model and a released chat assistant can feel very different to use.
+
+[audience laughter]
+
+Vector similarity itself deserves attention. Cosine similarity measures the angle between two vectors, ignoring their magnitude, which works well when embedding magnitude carries little meaningful information. Euclidean distance instead measures straight line distance and can behave differently depending on how the embedding model was trained. Most vector databases let you choose the distance metric, and the right choice can meaningfully affect retrieval quality.
+
+Chunk size is one of the most impactful and most overlooked design decisions in a RAG system. Chunks that are too small lose surrounding context, so a retrieved sentence can be technically relevant but impossible to interpret correctly on its own. Chunks that are too large dilute the embedding, since a long chunk covering several topics produces a vector that is a blurry average of all of them, making it harder for a query to match precisely.
+
+[audience laughter]
+
+Metadata filtering is a powerful complement to pure vector search. By attaching structured tags to each chunk, such as a source document, a date, an author, or a category, a retrieval system can narrow the search space before or alongside the similarity ranking. This is especially useful when a knowledge base spans many distinct sources and a user's question implies which subset is relevant.
+
+[pause for questions]
+
+Hybrid search combines traditional keyword based search, such as BM25, with vector similarity search. Keyword search excels at exact matches, like a specific product code or an exact phrase, cases where semantic similarity search can sometimes miss the mark because the embedding space does not preserve exact string matches well. Combining both signals, often with a weighted blend or a re ranking step, tends to outperform either approach alone.
+
+[slide transition]
+
+Re ranking is a two stage retrieval strategy. A fast, approximate method, usually vector similarity search, first pulls a larger candidate set of documents, perhaps twenty or fifty chunks. Then a slower, more accurate model scores each candidate specifically against the query and reorders them, keeping only the very best few for the final prompt. This trades a bit of extra computation for meaningfully better precision.
+
+Agents extend the RAG idea further, giving a language model the ability to take actions and decide for itself what to retrieve or which tool to call, rather than following one fixed retrieve then generate pipeline. An agent might decide a question needs a web search, a database query, and a calculator, chaining several retrieval and computation steps together before producing a final answer.
+
+[pause for questions]
+
+Multimodal retrieval extends these ideas beyond text, embedding images, audio, or video alongside text descriptions into a shared vector space, so a text query can retrieve a relevant image, or an image query can retrieve relevant text. This is increasingly important as knowledge bases include diagrams, screenshots, and recorded meetings alongside written documents.
+
+[slide transition]
+
+Latency budgets shape real world RAG architecture more than people expect. A user expects a response within a few seconds, which constrains how many retrieval rounds, re ranking passes, and generation tokens a system can afford. Production systems often cache embeddings for frequently accessed documents and precompute retrieval for common queries to stay within that budget.
+
+[pause for questions]
+
+Security deserves particular attention in retrieval augmented systems that operate over private data. If a vector store mixes documents from different users or permission levels, a poorly designed retriever can leak information a user should never see. Filtering by access control at retrieval time, not just at the application layer, is essential for any system handling sensitive or multi tenant data.
+
+As models and retrieval systems keep improving, the boundary between what a model knows innately and what it needs to look up will keep shifting, but the core idea will likely remain: separate the reasoning ability of a language model from the storage of facts, and let retrieval bridge the two. That separation is what makes these systems both more accurate and easier to keep up to date.
+
+[audience laughter]
+
+I want to thank you all for your attention throughout this long session. We have covered the history of artificial intelligence, the rise of deep learning and the transformer, DeepMind's landmark achievements from AlphaGo to AlphaFold, and the full mechanics of retrieval augmented generation, from chunking and embedding through retrieval, augmentation, and generation, along with the refinements and engineering considerations that make these systems work well in practice. In the next session we will build one of these systems together from scratch. Until then, thank you.
+
+Let's take a short digression before continuing. Embedding converts each chunk into a vector, a list of numbers capturing its meaning, so that texts with similar meaning end up close together in vector space, even if they use completely different words. This is what allows meaning based search rather than exact keyword matching.
+
+[brief technical difficulty, resuming]
+
+As I mentioned earlier, but it's worth restating: Multimodal retrieval extends these ideas beyond text, embedding images, audio, or video alongside text descriptions into a shared vector space, so a text query can retrieve a relevant image, or an image query can retrieve relevant text. This is increasingly important as knowledge bases include diagrams, screenshots, and recorded meetings alongside written documents.
+
+This connects directly to what we discussed before. Retrieval is not perfect. Embeddings capture meaning imperfectly, and the chunk that looks most similar by vector distance is not always the most useful one. Active research areas include hybrid search that combines keyword and vector search, re ranking steps using a second model to reorder retrieved candidates, and methods letting the model decide for itself when and what to retrieve.
+
+[slide transition]
+
+Storing places these vectors, alongside the original text, into a vector database such as FAISS, Chroma, or Pinecone. These databases are optimized for one operation: given a query vector, quickly find the most similar stored vectors, even across millions of chunks.
+
+[slide transition]
+
+Let's expand on this a little further. Artificial intelligence, at its core, is the effort to build machines that can perform tasks that would normally require human intelligence. That includes recognizing images, understanding language, making decisions, and even generating creative work. The field goes back to the nineteen fifties, when researchers gathered at Dartmouth College for a summer workshop that is often considered the birthplace of the term artificial intelligence.
+
+Moving on, Before transformers, models processed text sequentially, which made long range relationships hard to capture. Attention lets every word look at every other word at once, and this scales remarkably well. The more data and compute researchers used, the better these models got, with no obvious ceiling for a long time.
+
+[pause for questions]
+
+Let's expand on this a little further. Cost and latency are constant engineering concerns. Every embedding call and every generation call costs time and money. Caching common questions, batching embedding requests, and matching model size to each step's difficulty are standard optimizations; not every step needs the largest available model.
+
+[slide transition]
+
+Here's another angle on the same idea. Instruction tuning and reinforcement learning from human feedback are two techniques that shape how a base language model behaves as an assistant. A base model, trained purely to predict next tokens, is not naturally good at following instructions or refusing harmful requests. Additional training stages teach the model to be helpful, honest, and safe in conversation, which is why a raw pretrained model and a released chat assistant can feel very different to use.
+
+[slide transition]
+
+Let's take a short digression before continuing. Fine tuning is a technique for adapting a pretrained model to a narrower task by continuing training on a smaller, more specific dataset. This differs from retrieval augmented generation: fine tuning changes the model's internal weights permanently, while RAG leaves the model unchanged and instead supplies fresh information at query time through the prompt. The two approaches are complementary rather than competing.
+
+To make this more concrete, consider the following. But there is a fundamental limitation. A language model only knows what was in its training data, which has a cutoff date, and it cannot know anything private or specific to your own documents. Crucially, when a model does not know something, it often does not say so, instead generating a plausible but false answer. This is called hallucination, one of the biggest problems in deploying these systems.
+
+[pause for questions]
+
+Machine learning, a subset of AI, enables systems to learn from data without being explicitly programmed. Instead of writing rules by hand, you give the machine examples and let it find patterns on its own. In the nineteen eighties, backpropagation made it practical to train neural networks with multiple layers, loosely inspired by the human brain.
+
+[pause for questions]
+
+Welcome everyone, and thanks for joining this deep dive on artificial intelligence, its history, its present, and where it might be heading. We have a lot of ground to cover today, so let us get started right away. This is a long session, spanning many hours, so feel free to pause and come back at any point.
+
+In production, indexing often runs as a background job triggered whenever new documents arrive, keeping the vector store synchronized with the source of truth. Updates and deletions must be handled carefully, since stale entries in the vector store lead directly to wrong answers later.
+
+[audience laughter]
+
+Here's another angle on the same idea. Metadata filtering is a powerful complement to pure vector search. By attaching structured tags to each chunk, such as a source document, a date, an author, or a category, a retrieval system can narrow the search space before or alongside the similarity ranking. This is especially useful when a knowledge base spans many distinct sources and a user's question implies which subset is relevant.
+
+[brief technical difficulty, resuming]
+
+Someone in the audience asked about this, so let me clarify. The broader field of AI faces real societal questions too: bias in training data, the environmental cost of training enormous models, effects on employment, misinformation, and how to keep increasingly capable systems aligned with human values. DeepMind, like other major labs, maintains teams focused specifically on AI safety and ethics.
+
+The prompt wrapping retrieved context matters more than people expect. A good prompt clearly instructs the model to rely on the provided context, to say when it does not know, and to avoid inventing information. Small changes in phrasing can noticeably change how faithful and honest the resulting answers are.
+
+Retrieval augmented models turn a general purpose language model into a specialist on your own information. A hospital can ground an assistant in its medical protocols, a law firm in its case files, a software company in its documentation. The underlying model stays the same; the retrieved knowledge is what makes it useful for that specific domain.
+
+[audience laughter]
+
+Large language models are trained on vast amounts of text and can generate human like responses. These models are built on the transformer architecture, introduced in a twenty seventeen paper titled Attention Is All You Need. The key innovation is attention, letting the model weigh the importance of different words relative to each other, regardless of distance in the sentence.
+
+Security deserves particular attention in retrieval augmented systems that operate over private data. If a vector store mixes documents from different users or permission levels, a poorly designed retriever can leak information a user should never see. Filtering by access control at retrieval time, not just at the application layer, is essential for any system handling sensitive or multi tenant data.
+
+[brief technical difficulty, resuming]
+
+Let's expand on this a little further. Vector similarity itself deserves attention. Cosine similarity measures the angle between two vectors, ignoring their magnitude, which works well when embedding magnitude carries little meaningful information. Euclidean distance instead measures straight line distance and can behave differently depending on how the embedding model was trained. Most vector databases let you choose the distance metric, and the right choice can meaningfully affect retrieval quality.
+
+The quality of a retrieval augmented system is bounded by the quality of the documents feeding it. Cleaning documents, removing duplicates, fixing formatting, and chunking thoughtfully often improves results more than switching to a fancier model.
+
+After AlphaGo came AlphaZero, which taught itself Go, chess, and shogi from scratch with no human games, purely through self play. Then came AlphaFold, which predicts the three dimensional structure of proteins from their amino acid sequence, cracking a fifty year old open problem in biology. DeepMind released predicted structures for nearly every known protein, free, to the scientific community.
+
+Moving on, Trust and verification matter alongside retrieval. Good RAG systems provide citations linking each part of an answer back to its source chunk, letting a human verify the claim, which is essential in high stakes domains like medicine, law, and finance.
+
+[pause for questions]
+
+Latency budgets shape real world RAG architecture more than people expect. A user expects a response within a few seconds, which constrains how many retrieval rounds, re ranking passes, and generation tokens a system can afford. Production systems often cache embeddings for frequently accessed documents and precompute retrieval for common queries to stay within that budget.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: To be clear about scope, this session does not cover nuclear fusion. That is a topic in energy and physics, interesting in its own right, but entirely outside what we are discussing today, which is artificial intelligence, DeepMind, and retrieval augmented generation. This is mentioned only because the question comes up occasionally.
+
+Maximal marginal relevance, or MMR, is a retrieval refinement. Plain similarity search can return several nearly identical chunks, wasting space and narrowing the model's view. MMR selects chunks that are both relevant and diverse from each other, improving coverage of the topic.
+
+[pause for questions]
+
+Agents extend the RAG idea further, giving a language model the ability to take actions and decide for itself what to retrieve or which tool to call, rather than following one fixed retrieve then generate pipeline. An agent might decide a question needs a web search, a database query, and a calculator, chaining several retrieval and computation steps together before producing a final answer.
+
+[pause for questions]
+
+The multi query retriever is another refinement. A single phrasing of a question searches from only one angle, and documents phrased differently might be missed. This approach uses a language model to rewrite the question several ways, searches with each version, and merges the unique results, catching more relevant material.
+
+Contextual compression is a third refinement. A retrieved chunk might contain one relevant sentence buried in an otherwise irrelevant paragraph. A compressor model extracts just the relevant portion of each chunk before it reaches the final model, keeping context clean and reducing cost.
+
+[brief technical difficulty, resuming]
+
+Let's go deeper on tokenization, since it underlies everything a language model does. Text is broken into tokens, which might be whole words, parts of words, or punctuation. A tokenizer trained on a large corpus builds a vocabulary of common subword pieces, so rare words can still be represented as a sequence of familiar fragments rather than an unknown symbol. Token count, not word count, is what determines cost and context window usage in practice.
+
+To make this more concrete, consider the following. For a first retrieval augmented system, start simple: a handful of documents, reasonable chunking, straightforward embedding, a simple vector store, and a basic retrieve then generate pipeline, working end to end before adding refinements. Measure where the simple version falls short, then add MMR, multi query, or compression only where they demonstrably help.
+
+As I mentioned earlier, but it's worth restating: Positional information also matters in transformers. Because attention looks at all tokens at once rather than in strict order, the model needs some signal about where each token sits in the sequence. Positional encodings, whether fixed sinusoidal patterns or learned embeddings, are added to each token so the model can distinguish the first word of a sentence from the last.
+
+A RAG pipeline has two phases. Indexing happens ahead of time: documents are loaded, split into chunks, embedded into vectors, and stored in a vector database. Retrieval and generation happen at question time: the question is embedded, the nearest chunks are retrieved, combined with the question into a prompt, and sent to the model to generate a grounded answer.
+
+[brief technical difficulty, resuming]
+
+A natural question is why not simply make the context window bigger and include everything. Even with large context windows, processing huge context for every question is slow and expensive, models attend less well to information buried in the middle of very long input, and knowledge bases can be far larger than any context window could hold. Retrieval remains the practical solution.
+
+[slide transition]
+
+As models and retrieval systems keep improving, the boundary between what a model knows innately and what it needs to look up will keep shifting, but the core idea will likely remain: separate the reasoning ability of a language model from the storage of facts, and let retrieval bridge the two. That separation is what makes these systems both more accurate and easier to keep up to date.
+
+[audience laughter]
+
+To make this more concrete, consider the following. This scaling led to models with billions, then hundreds of billions of parameters, the internal numbers a model adjusts during training. A model learns by predicting the next word repeatedly across enormous text corpora, adjusting parameters each time it is wrong. Trained on much of the public internet plus books and code, these models develop broad abilities to write, summarize, translate, and answer questions.
+
+[slide transition]
+
+As I mentioned earlier, but it's worth restating: I want to thank you all for your attention throughout this long session. We have covered the history of artificial intelligence, the rise of deep learning and the transformer, DeepMind's landmark achievements from AlphaGo to AlphaFold, and the full mechanics of retrieval augmented generation, from chunking and embedding through retrieval, augmentation, and generation, along with the refinements and engineering considerations that make these systems work well in practice. In the next session we will build one of these systems together from scratch. Until then, thank you.
+
+[pause for questions]
+
+This connects directly to what we discussed before. For decades, answering questions about your own data meant building rigid systems with hand written rules and structured databases. Now, pointing a retrieval augmented model at a pile of unstructured documents can produce a system answering natural language questions, with citations, in a matter of hours rather than months.
+
+As I mentioned earlier, but it's worth restating: At question time, the user's query is embedded the same way, and the vector store returns the closest matching chunks, typically the top three to five. These retrieved chunks are combined with the question into an augmented prompt, usually with an instruction telling the model to answer only from the provided context and to say when it does not know.
+
+[pause for questions]
+
+Moving on, Evaluating a RAG system means measuring two things separately: retrieval quality, whether the right chunks are fetched for a given question, and answer quality, whether the final answer is accurate, complete, and faithful to the retrieved source. Faithfulness matters especially, since an answer can sound convincing while contradicting its own retrieved context.
+
+[brief technical difficulty, resuming]
+
+Moving on, DeepMind is known for breakthroughs like AlphaGo, which defeated the world champion at the board game Go. Go has more possible positions than atoms in the observable universe, and experts thought a machine beating a top human was a decade away. In twenty sixteen, AlphaGo defeated Lee Sedol in a five game match watched by millions. Move thirty seven in the second game was so unexpected that commentators initially thought it was a mistake.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: Hybrid search combines traditional keyword based search, such as BM25, with vector similarity search. Keyword search excels at exact matches, like a specific product code or an exact phrase, cases where semantic similarity search can sometimes miss the mark because the embedding space does not preserve exact string matches well. Combining both signals, often with a weighted blend or a re ranking step, tends to outperform either approach alone.
+
+[audience laughter]
+
+DeepMind is a British AI research lab founded in twenty ten and acquired by Google in twenty fourteen. It was founded by Demis Hassabis, Shane Legg, and Mustafa Suleyman. Demis Hassabis is the co founder and chief executive officer of DeepMind. He was a child chess prodigy, then a video game designer, then a neuroscientist, before turning to artificial intelligence, with the stated mission to solve intelligence and use it to solve everything else.
+
+[brief technical difficulty, resuming]
+
+This connects directly to what we discussed before. Generation is the final step: the augmented prompt, containing both retrieved context and the question, goes to the language model, which produces an answer grounded in the retrieved material rather than its own memory, making the answer more accurate and able to reflect information the model never saw during training.
+
+Let's take a short digression before continuing. Document loading is the first indexing step, reading raw text out of sources like PDFs, web pages, transcripts, or wikis. Splitting comes next, because a document is often too long to embed or retrieve precisely as one piece, so it is broken into chunks of a few hundred to a thousand characters, usually with some overlap so sentences are not awkwardly cut at chunk boundaries.
+
+[slide transition]
+
+To continue this thread, Chunk size is one of the most impactful and most overlooked design decisions in a RAG system. Chunks that are too small lose surrounding context, so a retrieved sentence can be technically relevant but impossible to interpret correctly on its own. Chunks that are too large dilute the embedding, since a long chunk covering several topics produces a vector that is a blurry average of all of them, making it harder for a query to match precisely.
+
+[slide transition]
+
+Here's another angle on the same idea. In those early days, researchers believed a machine as intelligent as a human was just a decade or two away. They built programs that could prove mathematical theorems, play checkers, and solve simple word problems. But the computers of the time were slow, memory was tiny, and the problems were far more complex than anyone appreciated. This led to what we now call the first AI winter, a period in the nineteen seventies when funding dried up.
+
+[slide transition]
+
+Deep learning uses neural networks with many layers to model complex patterns. In an image recognition network, early layers detect edges, later layers detect shapes and parts, and final layers recognize whole objects. This hierarchy of learned features is what makes deep learning so powerful, and it generalizes far beyond images, into language, audio, and structured data.
+
+[pause for questions]
+
+Re ranking is a two stage retrieval strategy. A fast, approximate method, usually vector similarity search, first pulls a larger candidate set of documents, perhaps twenty or fifty chunks. Then a slower, more accurate model scores each candidate specifically against the query and reorders them, keeping only the very best few for the final prompt. This trades a bit of extra computation for meaningfully better precision.
+
+[pause for questions]
+
+Circling back to an earlier point, Retrieval augmented generation, or RAG, combines language models with a search step to solve exactly this problem. Instead of relying only on memorized knowledge, the system first retrieves relevant documents from an external source, then feeds those documents to the model along with the question, so the answer stays grounded in real, verifiable information.
+
+[pause for questions]
+
+As I mentioned earlier, but it's worth restating: To summarize so far: artificial intelligence evolved from hand written rules to systems that learn from data. Deep learning and the transformer architecture unlocked powerful language models. Those models are powerful but limited by training data and prone to hallucination. Retrieval augmented generation grounds the model in retrieved documents, following the pipeline of load, split, embed, store, retrieve, augment, and generate.
+
+Here's another angle on the same idea. RAG does not eliminate hallucination entirely, it reduces it substantially. A model can still misread retrieved context, or retrieval can fetch the wrong chunks, so good chunking, good retrieval, and clear prompts all matter. RAG is also not limited to question answering, the same pattern underlies summarization, grounded drafting, customer support, and research assistants.
+
+[brief technical difficulty, resuming]
+
+To summarize so far: artificial intelligence evolved from hand written rules to systems that learn from data. Deep learning and the transformer architecture unlocked powerful language models. Those models are powerful but limited by training data and prone to hallucination. Retrieval augmented generation grounds the model in retrieved documents, following the pipeline of load, split, embed, store, retrieve, augment, and generate.
+
+[pause for questions]
+
+As I mentioned earlier, but it's worth restating: The broader field of AI faces real societal questions too: bias in training data, the environmental cost of training enormous models, effects on employment, misinformation, and how to keep increasingly capable systems aligned with human values. DeepMind, like other major labs, maintains teams focused specifically on AI safety and ethics.
+
+[slide transition]
+
+This connects directly to what we discussed before. In those early days, researchers believed a machine as intelligent as a human was just a decade or two away. They built programs that could prove mathematical theorems, play checkers, and solve simple word problems. But the computers of the time were slow, memory was tiny, and the problems were far more complex than anyone appreciated. This led to what we now call the first AI winter, a period in the nineteen seventies when funding dried up.
+
+[brief technical difficulty, resuming]
+
+Moving on, Multimodal retrieval extends these ideas beyond text, embedding images, audio, or video alongside text descriptions into a shared vector space, so a text query can retrieve a relevant image, or an image query can retrieve relevant text. This is increasingly important as knowledge bases include diagrams, screenshots, and recorded meetings alongside written documents.
+
+This connects directly to what we discussed before. The multi query retriever is another refinement. A single phrasing of a question searches from only one angle, and documents phrased differently might be missed. This approach uses a language model to rewrite the question several ways, searches with each version, and merges the unique results, catching more relevant material.
+
+Someone in the audience asked about this, so let me clarify. Storing places these vectors, alongside the original text, into a vector database such as FAISS, Chroma, or Pinecone. These databases are optimized for one operation: given a query vector, quickly find the most similar stored vectors, even across millions of chunks.
+
+[brief technical difficulty, resuming]
+
+Maximal marginal relevance, or MMR, is a retrieval refinement. Plain similarity search can return several nearly identical chunks, wasting space and narrowing the model's view. MMR selects chunks that are both relevant and diverse from each other, improving coverage of the topic.
+
+[audience laughter]
+
+Here's another angle on the same idea. After AlphaGo came AlphaZero, which taught itself Go, chess, and shogi from scratch with no human games, purely through self play. Then came AlphaFold, which predicts the three dimensional structure of proteins from their amino acid sequence, cracking a fifty year old open problem in biology. DeepMind released predicted structures for nearly every known protein, free, to the scientific community.
+
+[brief technical difficulty, resuming]
+
+Evaluating a RAG system means measuring two things separately: retrieval quality, whether the right chunks are fetched for a given question, and answer quality, whether the final answer is accurate, complete, and faithful to the retrieved source. Faithfulness matters especially, since an answer can sound convincing while contradicting its own retrieved context.
+
+[audience laughter]
+
+To continue this thread, A natural question is why not simply make the context window bigger and include everything. Even with large context windows, processing huge context for every question is slow and expensive, models attend less well to information buried in the middle of very long input, and knowledge bases can be far larger than any context window could hold. Retrieval remains the practical solution.
+
+[pause for questions]
+
+This connects directly to what we discussed before. Instruction tuning and reinforcement learning from human feedback are two techniques that shape how a base language model behaves as an assistant. A base model, trained purely to predict next tokens, is not naturally good at following instructions or refusing harmful requests. Additional training stages teach the model to be helpful, honest, and safe in conversation, which is why a raw pretrained model and a released chat assistant can feel very different to use.
+
+[pause for questions]
+
+As I mentioned earlier, but it's worth restating: As models and retrieval systems keep improving, the boundary between what a model knows innately and what it needs to look up will keep shifting, but the core idea will likely remain: separate the reasoning ability of a language model from the storage of facts, and let retrieval bridge the two. That separation is what makes these systems both more accurate and easier to keep up to date.
+
+Circling back to an earlier point, To be clear about scope, this session does not cover nuclear fusion. That is a topic in energy and physics, interesting in its own right, but entirely outside what we are discussing today, which is artificial intelligence, DeepMind, and retrieval augmented generation. This is mentioned only because the question comes up occasionally.
+
+[pause for questions]
+
+But there is a fundamental limitation. A language model only knows what was in its training data, which has a cutoff date, and it cannot know anything private or specific to your own documents. Crucially, when a model does not know something, it often does not say so, instead generating a plausible but false answer. This is called hallucination, one of the biggest problems in deploying these systems.
+
+[audience laughter]
+
+Let's take a short digression before continuing. Contextual compression is a third refinement. A retrieved chunk might contain one relevant sentence buried in an otherwise irrelevant paragraph. A compressor model extracts just the relevant portion of each chunk before it reaches the final model, keeping context clean and reducing cost.
+
+Artificial intelligence, at its core, is the effort to build machines that can perform tasks that would normally require human intelligence. That includes recognizing images, understanding language, making decisions, and even generating creative work. The field goes back to the nineteen fifties, when researchers gathered at Dartmouth College for a summer workshop that is often considered the birthplace of the term artificial intelligence.
+
+Generation is the final step: the augmented prompt, containing both retrieved context and the question, goes to the language model, which produces an answer grounded in the retrieved material rather than its own memory, making the answer more accurate and able to reflect information the model never saw during training.
+
+To make this more concrete, consider the following. RAG does not eliminate hallucination entirely, it reduces it substantially. A model can still misread retrieved context, or retrieval can fetch the wrong chunks, so good chunking, good retrieval, and clear prompts all matter. RAG is also not limited to question answering, the same pattern underlies summarization, grounded drafting, customer support, and research assistants.
+
+[audience laughter]
+
+Re ranking is a two stage retrieval strategy. A fast, approximate method, usually vector similarity search, first pulls a larger candidate set of documents, perhaps twenty or fifty chunks. Then a slower, more accurate model scores each candidate specifically against the query and reorders them, keeping only the very best few for the final prompt. This trades a bit of extra computation for meaningfully better precision.
+
+[pause for questions]
+
+Latency budgets shape real world RAG architecture more than people expect. A user expects a response within a few seconds, which constrains how many retrieval rounds, re ranking passes, and generation tokens a system can afford. Production systems often cache embeddings for frequently accessed documents and precompute retrieval for common queries to stay within that budget.
+
+[brief technical difficulty, resuming]
+
+To continue this thread, Fine tuning is a technique for adapting a pretrained model to a narrower task by continuing training on a smaller, more specific dataset. This differs from retrieval augmented generation: fine tuning changes the model's internal weights permanently, while RAG leaves the model unchanged and instead supplies fresh information at query time through the prompt. The two approaches are complementary rather than competing.
+
+Someone in the audience asked about this, so let me clarify. I want to thank you all for your attention throughout this long session. We have covered the history of artificial intelligence, the rise of deep learning and the transformer, DeepMind's landmark achievements from AlphaGo to AlphaFold, and the full mechanics of retrieval augmented generation, from chunking and embedding through retrieval, augmentation, and generation, along with the refinements and engineering considerations that make these systems work well in practice. In the next session we will build one of these systems together from scratch. Until then, thank you.
+
+Circling back to an earlier point, Chunk size is one of the most impactful and most overlooked design decisions in a RAG system. Chunks that are too small lose surrounding context, so a retrieved sentence can be technically relevant but impossible to interpret correctly on its own. Chunks that are too large dilute the embedding, since a long chunk covering several topics produces a vector that is a blurry average of all of them, making it harder for a query to match precisely.
+
+[brief technical difficulty, resuming]
+
+Before transformers, models processed text sequentially, which made long range relationships hard to capture. Attention lets every word look at every other word at once, and this scales remarkably well. The more data and compute researchers used, the better these models got, with no obvious ceiling for a long time.
+
+[audience laughter]
+
+Someone in the audience asked about this, so let me clarify. Document loading is the first indexing step, reading raw text out of sources like PDFs, web pages, transcripts, or wikis. Splitting comes next, because a document is often too long to embed or retrieve precisely as one piece, so it is broken into chunks of a few hundred to a thousand characters, usually with some overlap so sentences are not awkwardly cut at chunk boundaries.
+
+[pause for questions]
+
+Here's another angle on the same idea. Let's go deeper on tokenization, since it underlies everything a language model does. Text is broken into tokens, which might be whole words, parts of words, or punctuation. A tokenizer trained on a large corpus builds a vocabulary of common subword pieces, so rare words can still be represented as a sequence of familiar fragments rather than an unknown symbol. Token count, not word count, is what determines cost and context window usage in practice.
+
+[audience laughter]
+
+Circling back to an earlier point, For a first retrieval augmented system, start simple: a handful of documents, reasonable chunking, straightforward embedding, a simple vector store, and a basic retrieve then generate pipeline, working end to end before adding refinements. Measure where the simple version falls short, then add MMR, multi query, or compression only where they demonstrably help.
+
+[brief technical difficulty, resuming]
+
+Large language models are trained on vast amounts of text and can generate human like responses. These models are built on the transformer architecture, introduced in a twenty seventeen paper titled Attention Is All You Need. The key innovation is attention, letting the model weigh the importance of different words relative to each other, regardless of distance in the sentence.
+
+[audience laughter]
+
+Let's take a short digression before continuing. Agents extend the RAG idea further, giving a language model the ability to take actions and decide for itself what to retrieve or which tool to call, rather than following one fixed retrieve then generate pipeline. An agent might decide a question needs a web search, a database query, and a calculator, chaining several retrieval and computation steps together before producing a final answer.
+
+Metadata filtering is a powerful complement to pure vector search. By attaching structured tags to each chunk, such as a source document, a date, an author, or a category, a retrieval system can narrow the search space before or alongside the similarity ranking. This is especially useful when a knowledge base spans many distinct sources and a user's question implies which subset is relevant.
+
+To continue this thread, Retrieval augmented generation, or RAG, combines language models with a search step to solve exactly this problem. Instead of relying only on memorized knowledge, the system first retrieves relevant documents from an external source, then feeds those documents to the model along with the question, so the answer stays grounded in real, verifiable information.
+
+[brief technical difficulty, resuming]
+
+Circling back to an earlier point, Positional information also matters in transformers. Because attention looks at all tokens at once rather than in strict order, the model needs some signal about where each token sits in the sequence. Positional encodings, whether fixed sinusoidal patterns or learned embeddings, are added to each token so the model can distinguish the first word of a sentence from the last.
+
+Here's another angle on the same idea. Hybrid search combines traditional keyword based search, such as BM25, with vector similarity search. Keyword search excels at exact matches, like a specific product code or an exact phrase, cases where semantic similarity search can sometimes miss the mark because the embedding space does not preserve exact string matches well. Combining both signals, often with a weighted blend or a re ranking step, tends to outperform either approach alone.
+
+[brief technical difficulty, resuming]
+
+Circling back to an earlier point, In production, indexing often runs as a background job triggered whenever new documents arrive, keeping the vector store synchronized with the source of truth. Updates and deletions must be handled carefully, since stale entries in the vector store lead directly to wrong answers later.
+
+[pause for questions]
+
+A RAG pipeline has two phases. Indexing happens ahead of time: documents are loaded, split into chunks, embedded into vectors, and stored in a vector database. Retrieval and generation happen at question time: the question is embedded, the nearest chunks are retrieved, combined with the question into a prompt, and sent to the model to generate a grounded answer.
+
+[brief technical difficulty, resuming]
+
+Retrieval is not perfect. Embeddings capture meaning imperfectly, and the chunk that looks most similar by vector distance is not always the most useful one. Active research areas include hybrid search that combines keyword and vector search, re ranking steps using a second model to reorder retrieved candidates, and methods letting the model decide for itself when and what to retrieve.
+
+[pause for questions]
+
+To make this more concrete, consider the following. Trust and verification matter alongside retrieval. Good RAG systems provide citations linking each part of an answer back to its source chunk, letting a human verify the claim, which is essential in high stakes domains like medicine, law, and finance.
+
+[slide transition]
+
+Cost and latency are constant engineering concerns. Every embedding call and every generation call costs time and money. Caching common questions, batching embedding requests, and matching model size to each step's difficulty are standard optimizations; not every step needs the largest available model.
+
+[brief technical difficulty, resuming]
+
+This scaling led to models with billions, then hundreds of billions of parameters, the internal numbers a model adjusts during training. A model learns by predicting the next word repeatedly across enormous text corpora, adjusting parameters each time it is wrong. Trained on much of the public internet plus books and code, these models develop broad abilities to write, summarize, translate, and answer questions.
+
+[brief technical difficulty, resuming]
+
+Security deserves particular attention in retrieval augmented systems that operate over private data. If a vector store mixes documents from different users or permission levels, a poorly designed retriever can leak information a user should never see. Filtering by access control at retrieval time, not just at the application layer, is essential for any system handling sensitive or multi tenant data.
+
+[brief technical difficulty, resuming]
+
+DeepMind is a British AI research lab founded in twenty ten and acquired by Google in twenty fourteen. It was founded by Demis Hassabis, Shane Legg, and Mustafa Suleyman. Demis Hassabis is the co founder and chief executive officer of DeepMind. He was a child chess prodigy, then a video game designer, then a neuroscientist, before turning to artificial intelligence, with the stated mission to solve intelligence and use it to solve everything else.
+
+[pause for questions]
+
+Circling back to an earlier point, Welcome everyone, and thanks for joining this deep dive on artificial intelligence, its history, its present, and where it might be heading. We have a lot of ground to cover today, so let us get started right away. This is a long session, spanning many hours, so feel free to pause and come back at any point.
+
+[slide transition]
+
+The quality of a retrieval augmented system is bounded by the quality of the documents feeding it. Cleaning documents, removing duplicates, fixing formatting, and chunking thoughtfully often improves results more than switching to a fancier model.
+
+[brief technical difficulty, resuming]
+
+To continue this thread, Vector similarity itself deserves attention. Cosine similarity measures the angle between two vectors, ignoring their magnitude, which works well when embedding magnitude carries little meaningful information. Euclidean distance instead measures straight line distance and can behave differently depending on how the embedding model was trained. Most vector databases let you choose the distance metric, and the right choice can meaningfully affect retrieval quality.
+
+[slide transition]
+
+Machine learning, a subset of AI, enables systems to learn from data without being explicitly programmed. Instead of writing rules by hand, you give the machine examples and let it find patterns on its own. In the nineteen eighties, backpropagation made it practical to train neural networks with multiple layers, loosely inspired by the human brain.
+
+[slide transition]
+
+Let's take a short digression before continuing. DeepMind is known for breakthroughs like AlphaGo, which defeated the world champion at the board game Go. Go has more possible positions than atoms in the observable universe, and experts thought a machine beating a top human was a decade away. In twenty sixteen, AlphaGo defeated Lee Sedol in a five game match watched by millions. Move thirty seven in the second game was so unexpected that commentators initially thought it was a mistake.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: The prompt wrapping retrieved context matters more than people expect. A good prompt clearly instructs the model to rely on the provided context, to say when it does not know, and to avoid inventing information. Small changes in phrasing can noticeably change how faithful and honest the resulting answers are.
+
+[brief technical difficulty, resuming]
+
+As I mentioned earlier, but it's worth restating: Retrieval augmented models turn a general purpose language model into a specialist on your own information. A hospital can ground an assistant in its medical protocols, a law firm in its case files, a software company in its documentation. The underlying model stays the same; the retrieved knowledge is what makes it useful for that specific domain.
+
+[slide transition]
+
+To continue this thread, Deep learning uses neural networks with many layers to model complex patterns. In an image recognition network, early layers detect edges, later layers detect shapes and parts, and final layers recognize whole objects. This hierarchy of learned features is what makes deep learning so powerful, and it generalizes far beyond images, into language, audio, and structured data.
+
+[audience laughter]
+
+To make this more concrete, consider the following. Embedding converts each chunk into a vector, a list of numbers capturing its meaning, so that texts with similar meaning end up close together in vector space, even if they use completely different words. This is what allows meaning based search rather than exact keyword matching.
+
+[slide transition]
+
+For decades, answering questions about your own data meant building rigid systems with hand written rules and structured databases. Now, pointing a retrieval augmented model at a pile of unstructured documents can produce a system answering natural language questions, with citations, in a matter of hours rather than months.
+
+Moving on, At question time, the user's query is embedded the same way, and the vector store returns the closest matching chunks, typically the top three to five. These retrieved chunks are combined with the question into an augmented prompt, usually with an instruction telling the model to answer only from the provided context and to say when it does not know.
+
+[pause for questions]
+
+Instruction tuning and reinforcement learning from human feedback are two techniques that shape how a base language model behaves as an assistant. A base model, trained purely to predict next tokens, is not naturally good at following instructions or refusing harmful requests. Additional training stages teach the model to be helpful, honest, and safe in conversation, which is why a raw pretrained model and a released chat assistant can feel very different to use.
+
+[slide transition]
+
+Embedding converts each chunk into a vector, a list of numbers capturing its meaning, so that texts with similar meaning end up close together in vector space, even if they use completely different words. This is what allows meaning based search rather than exact keyword matching.
+
+[brief technical difficulty, resuming]
+
+Trust and verification matter alongside retrieval. Good RAG systems provide citations linking each part of an answer back to its source chunk, letting a human verify the claim, which is essential in high stakes domains like medicine, law, and finance.
+
+[audience laughter]
+
+Moving on, Artificial intelligence, at its core, is the effort to build machines that can perform tasks that would normally require human intelligence. That includes recognizing images, understanding language, making decisions, and even generating creative work. The field goes back to the nineteen fifties, when researchers gathered at Dartmouth College for a summer workshop that is often considered the birthplace of the term artificial intelligence.
+
+[audience laughter]
+
+Here's another angle on the same idea. Document loading is the first indexing step, reading raw text out of sources like PDFs, web pages, transcripts, or wikis. Splitting comes next, because a document is often too long to embed or retrieve precisely as one piece, so it is broken into chunks of a few hundred to a thousand characters, usually with some overlap so sentences are not awkwardly cut at chunk boundaries.
+
+Generation is the final step: the augmented prompt, containing both retrieved context and the question, goes to the language model, which produces an answer grounded in the retrieved material rather than its own memory, making the answer more accurate and able to reflect information the model never saw during training.
+
+[audience laughter]
+
+Let's take a short digression before continuing. The prompt wrapping retrieved context matters more than people expect. A good prompt clearly instructs the model to rely on the provided context, to say when it does not know, and to avoid inventing information. Small changes in phrasing can noticeably change how faithful and honest the resulting answers are.
+
+[brief technical difficulty, resuming]
+
+Let's expand on this a little further. Before transformers, models processed text sequentially, which made long range relationships hard to capture. Attention lets every word look at every other word at once, and this scales remarkably well. The more data and compute researchers used, the better these models got, with no obvious ceiling for a long time.
+
+[pause for questions]
+
+This connects directly to what we discussed before. DeepMind is a British AI research lab founded in twenty ten and acquired by Google in twenty fourteen. It was founded by Demis Hassabis, Shane Legg, and Mustafa Suleyman. Demis Hassabis is the co founder and chief executive officer of DeepMind. He was a child chess prodigy, then a video game designer, then a neuroscientist, before turning to artificial intelligence, with the stated mission to solve intelligence and use it to solve everything else.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: Metadata filtering is a powerful complement to pure vector search. By attaching structured tags to each chunk, such as a source document, a date, an author, or a category, a retrieval system can narrow the search space before or alongside the similarity ranking. This is especially useful when a knowledge base spans many distinct sources and a user's question implies which subset is relevant.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: Retrieval is not perfect. Embeddings capture meaning imperfectly, and the chunk that looks most similar by vector distance is not always the most useful one. Active research areas include hybrid search that combines keyword and vector search, re ranking steps using a second model to reorder retrieved candidates, and methods letting the model decide for itself when and what to retrieve.
+
+[brief technical difficulty, resuming]
+
+As I mentioned earlier, but it's worth restating: Maximal marginal relevance, or MMR, is a retrieval refinement. Plain similarity search can return several nearly identical chunks, wasting space and narrowing the model's view. MMR selects chunks that are both relevant and diverse from each other, improving coverage of the topic.
+
+[slide transition]
+
+Large language models are trained on vast amounts of text and can generate human like responses. These models are built on the transformer architecture, introduced in a twenty seventeen paper titled Attention Is All You Need. The key innovation is attention, letting the model weigh the importance of different words relative to each other, regardless of distance in the sentence.
+
+[pause for questions]
+
+This connects directly to what we discussed before. Deep learning uses neural networks with many layers to model complex patterns. In an image recognition network, early layers detect edges, later layers detect shapes and parts, and final layers recognize whole objects. This hierarchy of learned features is what makes deep learning so powerful, and it generalizes far beyond images, into language, audio, and structured data.
+
+[brief technical difficulty, resuming]
+
+Chunk size is one of the most impactful and most overlooked design decisions in a RAG system. Chunks that are too small lose surrounding context, so a retrieved sentence can be technically relevant but impossible to interpret correctly on its own. Chunks that are too large dilute the embedding, since a long chunk covering several topics produces a vector that is a blurry average of all of them, making it harder for a query to match precisely.
+
+[slide transition]
+
+As I mentioned earlier, but it's worth restating: Machine learning, a subset of AI, enables systems to learn from data without being explicitly programmed. Instead of writing rules by hand, you give the machine examples and let it find patterns on its own. In the nineteen eighties, backpropagation made it practical to train neural networks with multiple layers, loosely inspired by the human brain.
+
+[brief technical difficulty, resuming]
+
+Fine tuning is a technique for adapting a pretrained model to a narrower task by continuing training on a smaller, more specific dataset. This differs from retrieval augmented generation: fine tuning changes the model's internal weights permanently, while RAG leaves the model unchanged and instead supplies fresh information at query time through the prompt. The two approaches are complementary rather than competing.
+
+[pause for questions]
+
+This scaling led to models with billions, then hundreds of billions of parameters, the internal numbers a model adjusts during training. A model learns by predicting the next word repeatedly across enormous text corpora, adjusting parameters each time it is wrong. Trained on much of the public internet plus books and code, these models develop broad abilities to write, summarize, translate, and answer questions.
+
+[pause for questions]
+
+For a first retrieval augmented system, start simple: a handful of documents, reasonable chunking, straightforward embedding, a simple vector store, and a basic retrieve then generate pipeline, working end to end before adding refinements. Measure where the simple version falls short, then add MMR, multi query, or compression only where they demonstrably help.
+
+[brief technical difficulty, resuming]
+
+To make this more concrete, consider the following. A RAG pipeline has two phases. Indexing happens ahead of time: documents are loaded, split into chunks, embedded into vectors, and stored in a vector database. Retrieval and generation happen at question time: the question is embedded, the nearest chunks are retrieved, combined with the question into a prompt, and sent to the model to generate a grounded answer.
+
+[slide transition]
+
+As I mentioned earlier, but it's worth restating: As models and retrieval systems keep improving, the boundary between what a model knows innately and what it needs to look up will keep shifting, but the core idea will likely remain: separate the reasoning ability of a language model from the storage of facts, and let retrieval bridge the two. That separation is what makes these systems both more accurate and easier to keep up to date.
+
+[pause for questions]
+
+Let's take a short digression before continuing. Agents extend the RAG idea further, giving a language model the ability to take actions and decide for itself what to retrieve or which tool to call, rather than following one fixed retrieve then generate pipeline. An agent might decide a question needs a web search, a database query, and a calculator, chaining several retrieval and computation steps together before producing a final answer.
+
+Cost and latency are constant engineering concerns. Every embedding call and every generation call costs time and money. Caching common questions, batching embedding requests, and matching model size to each step's difficulty are standard optimizations; not every step needs the largest available model.
+
+Let's take a short digression before continuing. Security deserves particular attention in retrieval augmented systems that operate over private data. If a vector store mixes documents from different users or permission levels, a poorly designed retriever can leak information a user should never see. Filtering by access control at retrieval time, not just at the application layer, is essential for any system handling sensitive or multi tenant data.
+
+Retrieval augmented models turn a general purpose language model into a specialist on your own information. A hospital can ground an assistant in its medical protocols, a law firm in its case files, a software company in its documentation. The underlying model stays the same; the retrieved knowledge is what makes it useful for that specific domain.
+
+To make this more concrete, consider the following. RAG does not eliminate hallucination entirely, it reduces it substantially. A model can still misread retrieved context, or retrieval can fetch the wrong chunks, so good chunking, good retrieval, and clear prompts all matter. RAG is also not limited to question answering, the same pattern underlies summarization, grounded drafting, customer support, and research assistants.
+
+[slide transition]
+
+Contextual compression is a third refinement. A retrieved chunk might contain one relevant sentence buried in an otherwise irrelevant paragraph. A compressor model extracts just the relevant portion of each chunk before it reaches the final model, keeping context clean and reducing cost.
+
+[slide transition]
+
+As I mentioned earlier, but it's worth restating: At question time, the user's query is embedded the same way, and the vector store returns the closest matching chunks, typically the top three to five. These retrieved chunks are combined with the question into an augmented prompt, usually with an instruction telling the model to answer only from the provided context and to say when it does not know.
+
+[audience laughter]
+
+In production, indexing often runs as a background job triggered whenever new documents arrive, keeping the vector store synchronized with the source of truth. Updates and deletions must be handled carefully, since stale entries in the vector store lead directly to wrong answers later.
+
+As I mentioned earlier, but it's worth restating: For decades, answering questions about your own data meant building rigid systems with hand written rules and structured databases. Now, pointing a retrieval augmented model at a pile of unstructured documents can produce a system answering natural language questions, with citations, in a matter of hours rather than months.
+
+[audience laughter]
+
+Someone in the audience asked about this, so let me clarify. The quality of a retrieval augmented system is bounded by the quality of the documents feeding it. Cleaning documents, removing duplicates, fixing formatting, and chunking thoughtfully often improves results more than switching to a fancier model.
+
+[brief technical difficulty, resuming]
+
+Circling back to an earlier point, Welcome everyone, and thanks for joining this deep dive on artificial intelligence, its history, its present, and where it might be heading. We have a lot of ground to cover today, so let us get started right away. This is a long session, spanning many hours, so feel free to pause and come back at any point.
+
+Let's expand on this a little further. Vector similarity itself deserves attention. Cosine similarity measures the angle between two vectors, ignoring their magnitude, which works well when embedding magnitude carries little meaningful information. Euclidean distance instead measures straight line distance and can behave differently depending on how the embedding model was trained. Most vector databases let you choose the distance metric, and the right choice can meaningfully affect retrieval quality.
+
+[brief technical difficulty, resuming]
+
+Let's expand on this a little further. Multimodal retrieval extends these ideas beyond text, embedding images, audio, or video alongside text descriptions into a shared vector space, so a text query can retrieve a relevant image, or an image query can retrieve relevant text. This is increasingly important as knowledge bases include diagrams, screenshots, and recorded meetings alongside written documents.
+
+[brief technical difficulty, resuming]
+
+Here's another angle on the same idea. Latency budgets shape real world RAG architecture more than people expect. A user expects a response within a few seconds, which constrains how many retrieval rounds, re ranking passes, and generation tokens a system can afford. Production systems often cache embeddings for frequently accessed documents and precompute retrieval for common queries to stay within that budget.
+
+[audience laughter]
+
+Here's another angle on the same idea. Retrieval augmented generation, or RAG, combines language models with a search step to solve exactly this problem. Instead of relying only on memorized knowledge, the system first retrieves relevant documents from an external source, then feeds those documents to the model along with the question, so the answer stays grounded in real, verifiable information.
+
+[pause for questions]
+
+Here's another angle on the same idea. To summarize so far: artificial intelligence evolved from hand written rules to systems that learn from data. Deep learning and the transformer architecture unlocked powerful language models. Those models are powerful but limited by training data and prone to hallucination. Retrieval augmented generation grounds the model in retrieved documents, following the pipeline of load, split, embed, store, retrieve, augment, and generate.
+
+[slide transition]
+
+Evaluating a RAG system means measuring two things separately: retrieval quality, whether the right chunks are fetched for a given question, and answer quality, whether the final answer is accurate, complete, and faithful to the retrieved source. Faithfulness matters especially, since an answer can sound convincing while contradicting its own retrieved context.
+
+After AlphaGo came AlphaZero, which taught itself Go, chess, and shogi from scratch with no human games, purely through self play. Then came AlphaFold, which predicts the three dimensional structure of proteins from their amino acid sequence, cracking a fifty year old open problem in biology. DeepMind released predicted structures for nearly every known protein, free, to the scientific community.
+
+[pause for questions]
+
+The broader field of AI faces real societal questions too: bias in training data, the environmental cost of training enormous models, effects on employment, misinformation, and how to keep increasingly capable systems aligned with human values. DeepMind, like other major labs, maintains teams focused specifically on AI safety and ethics.
+
+Moving on, Re ranking is a two stage retrieval strategy. A fast, approximate method, usually vector similarity search, first pulls a larger candidate set of documents, perhaps twenty or fifty chunks. Then a slower, more accurate model scores each candidate specifically against the query and reorders them, keeping only the very best few for the final prompt. This trades a bit of extra computation for meaningfully better precision.
+
+[audience laughter]
+
+Here's another angle on the same idea. Hybrid search combines traditional keyword based search, such as BM25, with vector similarity search. Keyword search excels at exact matches, like a specific product code or an exact phrase, cases where semantic similarity search can sometimes miss the mark because the embedding space does not preserve exact string matches well. Combining both signals, often with a weighted blend or a re ranking step, tends to outperform either approach alone.
+
+[slide transition]
+
+To make this more concrete, consider the following. The multi query retriever is another refinement. A single phrasing of a question searches from only one angle, and documents phrased differently might be missed. This approach uses a language model to rewrite the question several ways, searches with each version, and merges the unique results, catching more relevant material.
+
+A natural question is why not simply make the context window bigger and include everything. Even with large context windows, processing huge context for every question is slow and expensive, models attend less well to information buried in the middle of very long input, and knowledge bases can be far larger than any context window could hold. Retrieval remains the practical solution.
+
+[slide transition]
+
+Here's another angle on the same idea. To be clear about scope, this session does not cover nuclear fusion. That is a topic in energy and physics, interesting in its own right, but entirely outside what we are discussing today, which is artificial intelligence, DeepMind, and retrieval augmented generation. This is mentioned only because the question comes up occasionally.
+
+[slide transition]
+
+Circling back to an earlier point, Positional information also matters in transformers. Because attention looks at all tokens at once rather than in strict order, the model needs some signal about where each token sits in the sequence. Positional encodings, whether fixed sinusoidal patterns or learned embeddings, are added to each token so the model can distinguish the first word of a sentence from the last.
+
+[slide transition]
+
+DeepMind is known for breakthroughs like AlphaGo, which defeated the world champion at the board game Go. Go has more possible positions than atoms in the observable universe, and experts thought a machine beating a top human was a decade away. In twenty sixteen, AlphaGo defeated Lee Sedol in a five game match watched by millions. Move thirty seven in the second game was so unexpected that commentators initially thought it was a mistake.
+
+[slide transition]
+
+In those early days, researchers believed a machine as intelligent as a human was just a decade or two away. They built programs that could prove mathematical theorems, play checkers, and solve simple word problems. But the computers of the time were slow, memory was tiny, and the problems were far more complex than anyone appreciated. This led to what we now call the first AI winter, a period in the nineteen seventies when funding dried up.
+
+Here's another angle on the same idea. I want to thank you all for your attention throughout this long session. We have covered the history of artificial intelligence, the rise of deep learning and the transformer, DeepMind's landmark achievements from AlphaGo to AlphaFold, and the full mechanics of retrieval augmented generation, from chunking and embedding through retrieval, augmentation, and generation, along with the refinements and engineering considerations that make these systems work well in practice. In the next session we will build one of these systems together from scratch. Until then, thank you.
+
+Moving on, Let's go deeper on tokenization, since it underlies everything a language model does. Text is broken into tokens, which might be whole words, parts of words, or punctuation. A tokenizer trained on a large corpus builds a vocabulary of common subword pieces, so rare words can still be represented as a sequence of familiar fragments rather than an unknown symbol. Token count, not word count, is what determines cost and context window usage in practice.
+
+[pause for questions]
+
+But there is a fundamental limitation. A language model only knows what was in its training data, which has a cutoff date, and it cannot know anything private or specific to your own documents. Crucially, when a model does not know something, it often does not say so, instead generating a plausible but false answer. This is called hallucination, one of the biggest problems in deploying these systems.
+
+[brief technical difficulty, resuming]
+
+Storing places these vectors, alongside the original text, into a vector database such as FAISS, Chroma, or Pinecone. These databases are optimized for one operation: given a query vector, quickly find the most similar stored vectors, even across millions of chunks.
+
+[brief technical difficulty, resuming]
+
+As I mentioned earlier, but it's worth restating: Multimodal retrieval extends these ideas beyond text, embedding images, audio, or video alongside text descriptions into a shared vector space, so a text query can retrieve a relevant image, or an image query can retrieve relevant text. This is increasingly important as knowledge bases include diagrams, screenshots, and recorded meetings alongside written documents.
+
+[pause for questions]
+
+As I mentioned earlier, but it's worth restating: This scaling led to models with billions, then hundreds of billions of parameters, the internal numbers a model adjusts during training. A model learns by predicting the next word repeatedly across enormous text corpora, adjusting parameters each time it is wrong. Trained on much of the public internet plus books and code, these models develop broad abilities to write, summarize, translate, and answer questions.
+
+[pause for questions]
+
+Positional information also matters in transformers. Because attention looks at all tokens at once rather than in strict order, the model needs some signal about where each token sits in the sequence. Positional encodings, whether fixed sinusoidal patterns or learned embeddings, are added to each token so the model can distinguish the first word of a sentence from the last.
+
+[audience laughter]
+
+Re ranking is a two stage retrieval strategy. A fast, approximate method, usually vector similarity search, first pulls a larger candidate set of documents, perhaps twenty or fifty chunks. Then a slower, more accurate model scores each candidate specifically against the query and reorders them, keeping only the very best few for the final prompt. This trades a bit of extra computation for meaningfully better precision.
+
+Chunk size is one of the most impactful and most overlooked design decisions in a RAG system. Chunks that are too small lose surrounding context, so a retrieved sentence can be technically relevant but impossible to interpret correctly on its own. Chunks that are too large dilute the embedding, since a long chunk covering several topics produces a vector that is a blurry average of all of them, making it harder for a query to match precisely.
+
+To summarize so far: artificial intelligence evolved from hand written rules to systems that learn from data. Deep learning and the transformer architecture unlocked powerful language models. Those models are powerful but limited by training data and prone to hallucination. Retrieval augmented generation grounds the model in retrieved documents, following the pipeline of load, split, embed, store, retrieve, augment, and generate.
+
+[audience laughter]
+
+Circling back to an earlier point, In production, indexing often runs as a background job triggered whenever new documents arrive, keeping the vector store synchronized with the source of truth. Updates and deletions must be handled carefully, since stale entries in the vector store lead directly to wrong answers later.
+
+[pause for questions]
+
+Circling back to an earlier point, Hybrid search combines traditional keyword based search, such as BM25, with vector similarity search. Keyword search excels at exact matches, like a specific product code or an exact phrase, cases where semantic similarity search can sometimes miss the mark because the embedding space does not preserve exact string matches well. Combining both signals, often with a weighted blend or a re ranking step, tends to outperform either approach alone.
+
+[pause for questions]
+
+Instruction tuning and reinforcement learning from human feedback are two techniques that shape how a base language model behaves as an assistant. A base model, trained purely to predict next tokens, is not naturally good at following instructions or refusing harmful requests. Additional training stages teach the model to be helpful, honest, and safe in conversation, which is why a raw pretrained model and a released chat assistant can feel very different to use.
+
+[slide transition]
+
+Circling back to an earlier point, Let's go deeper on tokenization, since it underlies everything a language model does. Text is broken into tokens, which might be whole words, parts of words, or punctuation. A tokenizer trained on a large corpus builds a vocabulary of common subword pieces, so rare words can still be represented as a sequence of familiar fragments rather than an unknown symbol. Token count, not word count, is what determines cost and context window usage in practice.
+
+[slide transition]
+
+But there is a fundamental limitation. A language model only knows what was in its training data, which has a cutoff date, and it cannot know anything private or specific to your own documents. Crucially, when a model does not know something, it often does not say so, instead generating a plausible but false answer. This is called hallucination, one of the biggest problems in deploying these systems.
+
+[slide transition]
+
+To make this more concrete, consider the following. Before transformers, models processed text sequentially, which made long range relationships hard to capture. Attention lets every word look at every other word at once, and this scales remarkably well. The more data and compute researchers used, the better these models got, with no obvious ceiling for a long time.
+
+[audience laughter]
+
+Trust and verification matter alongside retrieval. Good RAG systems provide citations linking each part of an answer back to its source chunk, letting a human verify the claim, which is essential in high stakes domains like medicine, law, and finance.
+
+Fine tuning is a technique for adapting a pretrained model to a narrower task by continuing training on a smaller, more specific dataset. This differs from retrieval augmented generation: fine tuning changes the model's internal weights permanently, while RAG leaves the model unchanged and instead supplies fresh information at query time through the prompt. The two approaches are complementary rather than competing.
+
+[slide transition]
+
+This connects directly to what we discussed before. Retrieval augmented generation, or RAG, combines language models with a search step to solve exactly this problem. Instead of relying only on memorized knowledge, the system first retrieves relevant documents from an external source, then feeds those documents to the model along with the question, so the answer stays grounded in real, verifiable information.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: Large language models are trained on vast amounts of text and can generate human like responses. These models are built on the transformer architecture, introduced in a twenty seventeen paper titled Attention Is All You Need. The key innovation is attention, letting the model weigh the importance of different words relative to each other, regardless of distance in the sentence.
+
+[pause for questions]
+
+Let's take a short digression before continuing. For a first retrieval augmented system, start simple: a handful of documents, reasonable chunking, straightforward embedding, a simple vector store, and a basic retrieve then generate pipeline, working end to end before adding refinements. Measure where the simple version falls short, then add MMR, multi query, or compression only where they demonstrably help.
+
+[brief technical difficulty, resuming]
+
+To be clear about scope, this session does not cover nuclear fusion. That is a topic in energy and physics, interesting in its own right, but entirely outside what we are discussing today, which is artificial intelligence, DeepMind, and retrieval augmented generation. This is mentioned only because the question comes up occasionally.
+
+Generation is the final step: the augmented prompt, containing both retrieved context and the question, goes to the language model, which produces an answer grounded in the retrieved material rather than its own memory, making the answer more accurate and able to reflect information the model never saw during training.
+
+[slide transition]
+
+Let's take a short digression before continuing. The prompt wrapping retrieved context matters more than people expect. A good prompt clearly instructs the model to rely on the provided context, to say when it does not know, and to avoid inventing information. Small changes in phrasing can noticeably change how faithful and honest the resulting answers are.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: Embedding converts each chunk into a vector, a list of numbers capturing its meaning, so that texts with similar meaning end up close together in vector space, even if they use completely different words. This is what allows meaning based search rather than exact keyword matching.
+
+[audience laughter]
+
+RAG does not eliminate hallucination entirely, it reduces it substantially. A model can still misread retrieved context, or retrieval can fetch the wrong chunks, so good chunking, good retrieval, and clear prompts all matter. RAG is also not limited to question answering, the same pattern underlies summarization, grounded drafting, customer support, and research assistants.
+
+[audience laughter]
+
+This connects directly to what we discussed before. Retrieval augmented models turn a general purpose language model into a specialist on your own information. A hospital can ground an assistant in its medical protocols, a law firm in its case files, a software company in its documentation. The underlying model stays the same; the retrieved knowledge is what makes it useful for that specific domain.
+
+[audience laughter]
+
+To make this more concrete, consider the following. The broader field of AI faces real societal questions too: bias in training data, the environmental cost of training enormous models, effects on employment, misinformation, and how to keep increasingly capable systems aligned with human values. DeepMind, like other major labs, maintains teams focused specifically on AI safety and ethics.
+
+[brief technical difficulty, resuming]
+
+Here's another angle on the same idea. Maximal marginal relevance, or MMR, is a retrieval refinement. Plain similarity search can return several nearly identical chunks, wasting space and narrowing the model's view. MMR selects chunks that are both relevant and diverse from each other, improving coverage of the topic.
+
+[slide transition]
+
+As I mentioned earlier, but it's worth restating: Agents extend the RAG idea further, giving a language model the ability to take actions and decide for itself what to retrieve or which tool to call, rather than following one fixed retrieve then generate pipeline. An agent might decide a question needs a web search, a database query, and a calculator, chaining several retrieval and computation steps together before producing a final answer.
+
+[slide transition]
+
+Vector similarity itself deserves attention. Cosine similarity measures the angle between two vectors, ignoring their magnitude, which works well when embedding magnitude carries little meaningful information. Euclidean distance instead measures straight line distance and can behave differently depending on how the embedding model was trained. Most vector databases let you choose the distance metric, and the right choice can meaningfully affect retrieval quality.
+
+[slide transition]
+
+Moving on, DeepMind is known for breakthroughs like AlphaGo, which defeated the world champion at the board game Go. Go has more possible positions than atoms in the observable universe, and experts thought a machine beating a top human was a decade away. In twenty sixteen, AlphaGo defeated Lee Sedol in a five game match watched by millions. Move thirty seven in the second game was so unexpected that commentators initially thought it was a mistake.
+
+[pause for questions]
+
+Here's another angle on the same idea. After AlphaGo came AlphaZero, which taught itself Go, chess, and shogi from scratch with no human games, purely through self play. Then came AlphaFold, which predicts the three dimensional structure of proteins from their amino acid sequence, cracking a fifty year old open problem in biology. DeepMind released predicted structures for nearly every known protein, free, to the scientific community.
+
+[brief technical difficulty, resuming]
+
+This connects directly to what we discussed before. Welcome everyone, and thanks for joining this deep dive on artificial intelligence, its history, its present, and where it might be heading. We have a lot of ground to cover today, so let us get started right away. This is a long session, spanning many hours, so feel free to pause and come back at any point.
+
+[audience laughter]
+
+To make this more concrete, consider the following. Metadata filtering is a powerful complement to pure vector search. By attaching structured tags to each chunk, such as a source document, a date, an author, or a category, a retrieval system can narrow the search space before or alongside the similarity ranking. This is especially useful when a knowledge base spans many distinct sources and a user's question implies which subset is relevant.
+
+[audience laughter]
+
+To make this more concrete, consider the following. In those early days, researchers believed a machine as intelligent as a human was just a decade or two away. They built programs that could prove mathematical theorems, play checkers, and solve simple word problems. But the computers of the time were slow, memory was tiny, and the problems were far more complex than anyone appreciated. This led to what we now call the first AI winter, a period in the nineteen seventies when funding dried up.
+
+[audience laughter]
+
+Let's take a short digression before continuing. Deep learning uses neural networks with many layers to model complex patterns. In an image recognition network, early layers detect edges, later layers detect shapes and parts, and final layers recognize whole objects. This hierarchy of learned features is what makes deep learning so powerful, and it generalizes far beyond images, into language, audio, and structured data.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: Document loading is the first indexing step, reading raw text out of sources like PDFs, web pages, transcripts, or wikis. Splitting comes next, because a document is often too long to embed or retrieve precisely as one piece, so it is broken into chunks of a few hundred to a thousand characters, usually with some overlap so sentences are not awkwardly cut at chunk boundaries.
+
+[pause for questions]
+
+A natural question is why not simply make the context window bigger and include everything. Even with large context windows, processing huge context for every question is slow and expensive, models attend less well to information buried in the middle of very long input, and knowledge bases can be far larger than any context window could hold. Retrieval remains the practical solution.
+
+[audience laughter]
+
+To make this more concrete, consider the following. I want to thank you all for your attention throughout this long session. We have covered the history of artificial intelligence, the rise of deep learning and the transformer, DeepMind's landmark achievements from AlphaGo to AlphaFold, and the full mechanics of retrieval augmented generation, from chunking and embedding through retrieval, augmentation, and generation, along with the refinements and engineering considerations that make these systems work well in practice. In the next session we will build one of these systems together from scratch. Until then, thank you.
+
+[brief technical difficulty, resuming]
+
+Let's take a short digression before continuing. The quality of a retrieval augmented system is bounded by the quality of the documents feeding it. Cleaning documents, removing duplicates, fixing formatting, and chunking thoughtfully often improves results more than switching to a fancier model.
+
+[audience laughter]
+
+Artificial intelligence, at its core, is the effort to build machines that can perform tasks that would normally require human intelligence. That includes recognizing images, understanding language, making decisions, and even generating creative work. The field goes back to the nineteen fifties, when researchers gathered at Dartmouth College for a summer workshop that is often considered the birthplace of the term artificial intelligence.
+
+To continue this thread, Retrieval is not perfect. Embeddings capture meaning imperfectly, and the chunk that looks most similar by vector distance is not always the most useful one. Active research areas include hybrid search that combines keyword and vector search, re ranking steps using a second model to reorder retrieved candidates, and methods letting the model decide for itself when and what to retrieve.
+
+[brief technical difficulty, resuming]
+
+Circling back to an earlier point, DeepMind is a British AI research lab founded in twenty ten and acquired by Google in twenty fourteen. It was founded by Demis Hassabis, Shane Legg, and Mustafa Suleyman. Demis Hassabis is the co founder and chief executive officer of DeepMind. He was a child chess prodigy, then a video game designer, then a neuroscientist, before turning to artificial intelligence, with the stated mission to solve intelligence and use it to solve everything else.
+
+[brief technical difficulty, resuming]
+
+To make this more concrete, consider the following. As models and retrieval systems keep improving, the boundary between what a model knows innately and what it needs to look up will keep shifting, but the core idea will likely remain: separate the reasoning ability of a language model from the storage of facts, and let retrieval bridge the two. That separation is what makes these systems both more accurate and easier to keep up to date.
+
+[brief technical difficulty, resuming]
+
+Moving on, Cost and latency are constant engineering concerns. Every embedding call and every generation call costs time and money. Caching common questions, batching embedding requests, and matching model size to each step's difficulty are standard optimizations; not every step needs the largest available model.
+
+Let's expand on this a little further. At question time, the user's query is embedded the same way, and the vector store returns the closest matching chunks, typically the top three to five. These retrieved chunks are combined with the question into an augmented prompt, usually with an instruction telling the model to answer only from the provided context and to say when it does not know.
+
+[slide transition]
+
+Moving on, Security deserves particular attention in retrieval augmented systems that operate over private data. If a vector store mixes documents from different users or permission levels, a poorly designed retriever can leak information a user should never see. Filtering by access control at retrieval time, not just at the application layer, is essential for any system handling sensitive or multi tenant data.
+
+Let's take a short digression before continuing. Contextual compression is a third refinement. A retrieved chunk might contain one relevant sentence buried in an otherwise irrelevant paragraph. A compressor model extracts just the relevant portion of each chunk before it reaches the final model, keeping context clean and reducing cost.
+
+[slide transition]
+
+Moving on, Latency budgets shape real world RAG architecture more than people expect. A user expects a response within a few seconds, which constrains how many retrieval rounds, re ranking passes, and generation tokens a system can afford. Production systems often cache embeddings for frequently accessed documents and precompute retrieval for common queries to stay within that budget.
+
+[audience laughter]
+
+For decades, answering questions about your own data meant building rigid systems with hand written rules and structured databases. Now, pointing a retrieval augmented model at a pile of unstructured documents can produce a system answering natural language questions, with citations, in a matter of hours rather than months.
+
+[slide transition]
+
+To continue this thread, A RAG pipeline has two phases. Indexing happens ahead of time: documents are loaded, split into chunks, embedded into vectors, and stored in a vector database. Retrieval and generation happen at question time: the question is embedded, the nearest chunks are retrieved, combined with the question into a prompt, and sent to the model to generate a grounded answer.
+
+[slide transition]
+
+This connects directly to what we discussed before. The multi query retriever is another refinement. A single phrasing of a question searches from only one angle, and documents phrased differently might be missed. This approach uses a language model to rewrite the question several ways, searches with each version, and merges the unique results, catching more relevant material.
+
+[pause for questions]
+
+This connects directly to what we discussed before. Evaluating a RAG system means measuring two things separately: retrieval quality, whether the right chunks are fetched for a given question, and answer quality, whether the final answer is accurate, complete, and faithful to the retrieved source. Faithfulness matters especially, since an answer can sound convincing while contradicting its own retrieved context.
+
+[audience laughter]
+
+As I mentioned earlier, but it's worth restating: Storing places these vectors, alongside the original text, into a vector database such as FAISS, Chroma, or Pinecone. These databases are optimized for one operation: given a query vector, quickly find the most similar stored vectors, even across millions of chunks.
+
+[pause for questions]
+
+Here's another angle on the same idea. Machine learning, a subset of AI, enables systems to learn from data without being explicitly programmed. Instead of writing rules by hand, you give the machine examples and let it find patterns on its own. In the nineteen eighties, backpropagation made it practical to train neural networks with multiple layers, loosely inspired by the human brain.
+
+Let's expand on this a little further. Hybrid search combines traditional keyword based search, such as BM25, with vector similarity search. Keyword search excels at exact matches, like a specific product code or an exact phrase, cases where semantic similarity search can sometimes miss the mark because the embedding space does not preserve exact string matches well. Combining both signals, often with a weighted blend or a re ranking step, tends to outperform either approach alone.
+
+[audience laughter]
+
+This connects directly to what we discussed before. Generation is the final step: the augmented prompt, containing both retrieved context and the question, goes to the language model, which produces an answer grounded in the retrieved material rather than its own memory, making the answer more accurate and able to reflect information the model never saw during training.
+
+[audience laughter]
+
+Let's take a short digression before continuing. Large language models are trained on vast amounts of text and can generate human like responses. These models are built on the transformer architecture, introduced in a twenty seventeen paper titled Attention Is All You Need. The key innovation is attention, letting the model weigh the importance of different words relative to each other, regardless of distance in the sentence.
+
+[audience laughter]
+
+Vector similarity itself deserves attention. Cosine similarity measures the angle between two vectors, ignoring their magnitude, which works well when embedding magnitude carries little meaningful information. Euclidean distance instead measures straight line distance and can behave differently depending on how the embedding model was trained. Most vector databases let you choose the distance metric, and the right choice can meaningfully affect retrieval quality.
+
+[audience laughter]
+
+Let's take a short digression before continuing. Contextual compression is a third refinement. A retrieved chunk might contain one relevant sentence buried in an otherwise irrelevant paragraph. A compressor model extracts just the relevant portion of each chunk before it reaches the final model, keeping context clean and reducing cost.
+
+[slide transition]
+
+Moving on, But there is a fundamental limitation. A language model only knows what was in its training data, which has a cutoff date, and it cannot know anything private or specific to your own documents. Crucially, when a model does not know something, it often does not say so, instead generating a plausible but false answer. This is called hallucination, one of the biggest problems in deploying these systems.
+
+[slide transition]
+
+Cost and latency are constant engineering concerns. Every embedding call and every generation call costs time and money. Caching common questions, batching embedding requests, and matching model size to each step's difficulty are standard optimizations; not every step needs the largest available model.
+
+To continue this thread, Chunk size is one of the most impactful and most overlooked design decisions in a RAG system. Chunks that are too small lose surrounding context, so a retrieved sentence can be technically relevant but impossible to interpret correctly on its own. Chunks that are too large dilute the embedding, since a long chunk covering several topics produces a vector that is a blurry average of all of them, making it harder for a query to match precisely.
+
+[brief technical difficulty, resuming]
+
+Retrieval augmented generation, or RAG, combines language models with a search step to solve exactly this problem. Instead of relying only on memorized knowledge, the system first retrieves relevant documents from an external source, then feeds those documents to the model along with the question, so the answer stays grounded in real, verifiable information.
+
+Moving on, The quality of a retrieval augmented system is bounded by the quality of the documents feeding it. Cleaning documents, removing duplicates, fixing formatting, and chunking thoughtfully often improves results more than switching to a fancier model.
+
+[audience laughter]
+
+Let's expand on this a little further. In production, indexing often runs as a background job triggered whenever new documents arrive, keeping the vector store synchronized with the source of truth. Updates and deletions must be handled carefully, since stale entries in the vector store lead directly to wrong answers later.
+
+[slide transition]
+
+Let's take a short digression before continuing. Deep learning uses neural networks with many layers to model complex patterns. In an image recognition network, early layers detect edges, later layers detect shapes and parts, and final layers recognize whole objects. This hierarchy of learned features is what makes deep learning so powerful, and it generalizes far beyond images, into language, audio, and structured data.
+
+[audience laughter]
+
+This connects directly to what we discussed before. I want to thank you all for your attention throughout this long session. We have covered the history of artificial intelligence, the rise of deep learning and the transformer, DeepMind's landmark achievements from AlphaGo to AlphaFold, and the full mechanics of retrieval augmented generation, from chunking and embedding through retrieval, augmentation, and generation, along with the refinements and engineering considerations that make these systems work well in practice. In the next session we will build one of these systems together from scratch. Until then, thank you.
+
+[slide transition]
+
+The broader field of AI faces real societal questions too: bias in training data, the environmental cost of training enormous models, effects on employment, misinformation, and how to keep increasingly capable systems aligned with human values. DeepMind, like other major labs, maintains teams focused specifically on AI safety and ethics.
+
+[slide transition]
+
+RAG does not eliminate hallucination entirely, it reduces it substantially. A model can still misread retrieved context, or retrieval can fetch the wrong chunks, so good chunking, good retrieval, and clear prompts all matter. RAG is also not limited to question answering, the same pattern underlies summarization, grounded drafting, customer support, and research assistants.
+
+[slide transition]
+
+Circling back to an earlier point, Agents extend the RAG idea further, giving a language model the ability to take actions and decide for itself what to retrieve or which tool to call, rather than following one fixed retrieve then generate pipeline. An agent might decide a question needs a web search, a database query, and a calculator, chaining several retrieval and computation steps together before producing a final answer.
+
+[audience laughter]
+
+For decades, answering questions about your own data meant building rigid systems with hand written rules and structured databases. Now, pointing a retrieval augmented model at a pile of unstructured documents can produce a system answering natural language questions, with citations, in a matter of hours rather than months.
+
+[brief technical difficulty, resuming]
+
+Let's take a short digression before continuing. The multi query retriever is another refinement. A single phrasing of a question searches from only one angle, and documents phrased differently might be missed. This approach uses a language model to rewrite the question several ways, searches with each version, and merges the unique results, catching more relevant material.
+
+[audience laughter]
+
+After AlphaGo came AlphaZero, which taught itself Go, chess, and shogi from scratch with no human games, purely through self play. Then came AlphaFold, which predicts the three dimensional structure of proteins from their amino acid sequence, cracking a fifty year old open problem in biology. DeepMind released predicted structures for nearly every known protein, free, to the scientific community.
+
+[slide transition]
+
+Artificial intelligence, at its core, is the effort to build machines that can perform tasks that would normally require human intelligence. That includes recognizing images, understanding language, making decisions, and even generating creative work. The field goes back to the nineteen fifties, when researchers gathered at Dartmouth College for a summer workshop that is often considered the birthplace of the term artificial intelligence.
+
+To continue this thread, Before transformers, models processed text sequentially, which made long range relationships hard to capture. Attention lets every word look at every other word at once, and this scales remarkably well. The more data and compute researchers used, the better these models got, with no obvious ceiling for a long time.
+
+[audience laughter]
+
+To continue this thread, Trust and verification matter alongside retrieval. Good RAG systems provide citations linking each part of an answer back to its source chunk, letting a human verify the claim, which is essential in high stakes domains like medicine, law, and finance.
+
+[slide transition]
+
+Instruction tuning and reinforcement learning from human feedback are two techniques that shape how a base language model behaves as an assistant. A base model, trained purely to predict next tokens, is not naturally good at following instructions or refusing harmful requests. Additional training stages teach the model to be helpful, honest, and safe in conversation, which is why a raw pretrained model and a released chat assistant can feel very different to use.
+
+[pause for questions]
+
+A natural question is why not simply make the context window bigger and include everything. Even with large context windows, processing huge context for every question is slow and expensive, models attend less well to information buried in the middle of very long input, and knowledge bases can be far larger than any context window could hold. Retrieval remains the practical solution.
+
+Moving on, Latency budgets shape real world RAG architecture more than people expect. A user expects a response within a few seconds, which constrains how many retrieval rounds, re ranking passes, and generation tokens a system can afford. Production systems often cache embeddings for frequently accessed documents and precompute retrieval for common queries to stay within that budget.
+
+[brief technical difficulty, resuming]
+
+This connects directly to what we discussed before. The prompt wrapping retrieved context matters more than people expect. A good prompt clearly instructs the model to rely on the provided context, to say when it does not know, and to avoid inventing information. Small changes in phrasing can noticeably change how faithful and honest the resulting answers are.
+
+[slide transition]
+
+Welcome everyone, and thanks for joining this deep dive on artificial intelligence, its history, its present, and where it might be heading. We have a lot of ground to cover today, so let us get started right away. This is a long session, spanning many hours, so feel free to pause and come back at any point.
+
+[pause for questions]
+
+To make this more concrete, consider the following. Retrieval is not perfect. Embeddings capture meaning imperfectly, and the chunk that looks most similar by vector distance is not always the most useful one. Active research areas include hybrid search that combines keyword and vector search, re ranking steps using a second model to reorder retrieved candidates, and methods letting the model decide for itself when and what to retrieve.
+
+[brief technical difficulty, resuming]
+
+In those early days, researchers believed a machine as intelligent as a human was just a decade or two away. They built programs that could prove mathematical theorems, play checkers, and solve simple word problems. But the computers of the time were slow, memory was tiny, and the problems were far more complex than anyone appreciated. This led to what we now call the first AI winter, a period in the nineteen seventies when funding dried up.
+
+[slide transition]
+
+At question time, the user's query is embedded the same way, and the vector store returns the closest matching chunks, typically the top three to five. These retrieved chunks are combined with the question into an augmented prompt, usually with an instruction telling the model to answer only from the provided context and to say when it does not know.
+
+[slide transition]
+
+This connects directly to what we discussed before. Multimodal retrieval extends these ideas beyond text, embedding images, audio, or video alongside text descriptions into a shared vector space, so a text query can retrieve a relevant image, or an image query can retrieve relevant text. This is increasingly important as knowledge bases include diagrams, screenshots, and recorded meetings alongside written documents.
+
+[brief technical difficulty, resuming]
+
+Embedding converts each chunk into a vector, a list of numbers capturing its meaning, so that texts with similar meaning end up close together in vector space, even if they use completely different words. This is what allows meaning based search rather than exact keyword matching.
+
+[audience laughter]
+
+To make this more concrete, consider the following. This scaling led to models with billions, then hundreds of billions of parameters, the internal numbers a model adjusts during training. A model learns by predicting the next word repeatedly across enormous text corpora, adjusting parameters each time it is wrong. Trained on much of the public internet plus books and code, these models develop broad abilities to write, summarize, translate, and answer questions.
+
+[slide transition]
+
+To continue this thread, DeepMind is a British AI research lab founded in twenty ten and acquired by Google in twenty fourteen. It was founded by Demis Hassabis, Shane Legg, and Mustafa Suleyman. Demis Hassabis is the co founder and chief executive officer of DeepMind. He was a child chess prodigy, then a video game designer, then a neuroscientist, before turning to artificial intelligence, with the stated mission to solve intelligence and use it to solve everything else.
+
+[slide transition]
+
+Storing places these vectors, alongside the original text, into a vector database such as FAISS, Chroma, or Pinecone. These databases are optimized for one operation: given a query vector, quickly find the most similar stored vectors, even across millions of chunks.
+
+[brief technical difficulty, resuming]
+
+Someone in the audience asked about this, so let me clarify. Security deserves particular attention in retrieval augmented systems that operate over private data. If a vector store mixes documents from different users or permission levels, a poorly designed retriever can leak information a user should never see. Filtering by access control at retrieval time, not just at the application layer, is essential for any system handling sensitive or multi tenant data.
+
+A RAG pipeline has two phases. Indexing happens ahead of time: documents are loaded, split into chunks, embedded into vectors, and stored in a vector database. Retrieval and generation happen at question time: the question is embedded, the nearest chunks are retrieved, combined with the question into a prompt, and sent to the model to generate a grounded answer.
+
+[slide transition]
+
+DeepMind is known for breakthroughs like AlphaGo, which defeated the world champion at the board game Go. Go has more possible positions than atoms in the observable universe, and experts thought a machine beating a top human was a decade away. In twenty sixteen, AlphaGo defeated Lee Sedol in a five game match watched by millions. Move thirty seven in the second game was so unexpected that commentators initially thought it was a mistake.
+
+[slide transition]
+
+To make this more concrete, consider the following. Machine learning, a subset of AI, enables systems to learn from data without being explicitly programmed. Instead of writing rules by hand, you give the machine examples and let it find patterns on its own. In the nineteen eighties, backpropagation made it practical to train neural networks with multiple layers, loosely inspired by the human brain.
+
+[brief technical difficulty, resuming]
+
+This connects directly to what we discussed before. To summarize so far: artificial intelligence evolved from hand written rules to systems that learn from data. Deep learning and the transformer architecture unlocked powerful language models. Those models are powerful but limited by training data and prone to hallucination. Retrieval augmented generation grounds the model in retrieved documents, following the pipeline of load, split, embed, store, retrieve, augment, and generate.
+
+Metadata filtering is a powerful complement to pure vector search. By attaching structured tags to each chunk, such as a source document, a date, an author, or a category, a retrieval system can narrow the search space before or alongside the similarity ranking. This is especially useful when a knowledge base spans many distinct sources and a user's question implies which subset is relevant.
+
+[brief technical difficulty, resuming]
+
+To be clear about scope, this session does not cover nuclear fusion. That is a topic in energy and physics, interesting in its own right, but entirely outside what we are discussing today, which is artificial intelligence, DeepMind, and retrieval augmented generation. This is mentioned only because the question comes up occasionally.
+
+[audience laughter]
+
+Let's go deeper on tokenization, since it underlies everything a language model does. Text is broken into tokens, which might be whole words, parts of words, or punctuation. A tokenizer trained on a large corpus builds a vocabulary of common subword pieces, so rare words can still be represented as a sequence of familiar fragments rather than an unknown symbol. Token count, not word count, is what determines cost and context window usage in practice.
+
+[slide transition]
+
+To make this more concrete, consider the following. Maximal marginal relevance, or MMR, is a retrieval refinement. Plain similarity search can return several nearly identical chunks, wasting space and narrowing the model's view. MMR selects chunks that are both relevant and diverse from each other, improving coverage of the topic.
+
+[audience laughter]
+
+Re ranking is a two stage retrieval strategy. A fast, approximate method, usually vector similarity search, first pulls a larger candidate set of documents, perhaps twenty or fifty chunks. Then a slower, more accurate model scores each candidate specifically against the query and reorders them, keeping only the very best few for the final prompt. This trades a bit of extra computation for meaningfully better precision.
+
+[audience laughter]
+
+Retrieval augmented models turn a general purpose language model into a specialist on your own information. A hospital can ground an assistant in its medical protocols, a law firm in its case files, a software company in its documentation. The underlying model stays the same; the retrieved knowledge is what makes it useful for that specific domain.
+
+Let's take a short digression before continuing. Evaluating a RAG system means measuring two things separately: retrieval quality, whether the right chunks are fetched for a given question, and answer quality, whether the final answer is accurate, complete, and faithful to the retrieved source. Faithfulness matters especially, since an answer can sound convincing while contradicting its own retrieved context.
+
+[brief technical difficulty, resuming]
+
+Let's take a short digression before continuing. For a first retrieval augmented system, start simple: a handful of documents, reasonable chunking, straightforward embedding, a simple vector store, and a basic retrieve then generate pipeline, working end to end before adding refinements. Measure where the simple version falls short, then add MMR, multi query, or compression only where they demonstrably help.
+
+[audience laughter]
+
+To make this more concrete, consider the following. Document loading is the first indexing step, reading raw text out of sources like PDFs, web pages, transcripts, or wikis. Splitting comes next, because a document is often too long to embed or retrieve precisely as one piece, so it is broken into chunks of a few hundred to a thousand characters, usually with some overlap so sentences are not awkwardly cut at chunk boundaries.
+
+[slide transition]
+
+Circling back to an earlier point, Fine tuning is a technique for adapting a pretrained model to a narrower task by continuing training on a smaller, more specific dataset. This differs from retrieval augmented generation: fine tuning changes the model's internal weights permanently, while RAG leaves the model unchanged and instead supplies fresh information at query time through the prompt. The two approaches are complementary rather than competing.
+
+[brief technical difficulty, resuming]
+
+As models and retrieval systems keep improving, the boundary between what a model knows innately and what it needs to look up will keep shifting, but the core idea will likely remain: separate the reasoning ability of a language model from the storage of facts, and let retrieval bridge the two. That separation is what makes these systems both more accurate and easier to keep up to date.
+
+[brief technical difficulty, resuming]
+
+As I mentioned earlier, but it's worth restating: Positional information also matters in transformers. Because attention looks at all tokens at once rather than in strict order, the model needs some signal about where each token sits in the sequence. Positional encodings, whether fixed sinusoidal patterns or learned embeddings, are added to each token so the model can distinguish the first word of a sentence from the last.
+
+[slide transition]
